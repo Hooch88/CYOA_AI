@@ -9,6 +9,7 @@ const Location = require('./Location.js');
 const Globals = require('./Globals.js');
 const SlashCommandRegistry = require('./SlashCommandRegistry.js');
 const console = require('console');
+const { buildBasePromptContext, buildSlimmedPlayerActionContext } = require('./prompt-context-builder.js');
 
 
 let eventsProcessedThisTurn = false;
@@ -225,7 +226,7 @@ module.exports = function registerApiRoutes(scope) {
 
             let resolvedBaseContext = baseContext;
             if (!resolvedBaseContext) {
-                resolvedBaseContext = await prepareBasePromptContext({ locationOverride: activeLocation });
+                resolvedBaseContext = await buildBasePromptContext({ locationOverride: activeLocation });
             }
 
             const renderedTemplate = promptEnv.render('base-context.xml.njk', {
@@ -321,7 +322,7 @@ module.exports = function registerApiRoutes(scope) {
                 return;
             }
 
-            const baseContext = await prepareBasePromptContext({ locationOverride: location });
+            const baseContext = await buildBasePromptContext({ locationOverride: location });
 
             if (needsLocationSeeds) {
                 const locationSeeds = await generateRandomEventSeeds({
@@ -869,7 +870,7 @@ module.exports = function registerApiRoutes(scope) {
 
             let baseContext = {};
             try {
-                baseContext = await prepareBasePromptContext({ locationOverride });
+                baseContext = await buildBasePromptContext({ locationOverride });
             } catch (error) {
                 console.warn('Failed to build base context for chat summarization:', error.message);
             }
@@ -1909,7 +1910,7 @@ module.exports = function registerApiRoutes(scope) {
             }
 
             try {
-                const baseContext = await prepareBasePromptContext({ locationOverride });
+                const baseContext = await buildBasePromptContext({ locationOverride });
                 const location = locationOverride || baseContext?.currentLocation || null;
                 const renderedTemplate = promptEnv.render('base-context.xml.njk', {
                     ...baseContext,
@@ -2583,7 +2584,7 @@ module.exports = function registerApiRoutes(scope) {
             }
 
             try {
-                const baseContext = await prepareBasePromptContext({ locationOverride: locationOverride || null });
+                const baseContext = await buildBasePromptContext({ locationOverride: locationOverride || null });
                 const renderedTemplate = promptEnv.render('base-context.xml.njk', {
                     ...baseContext,
                     promptType: 'attack-check',
@@ -3715,7 +3716,7 @@ module.exports = function registerApiRoutes(scope) {
 
         async function runNextNpcListPrompt({ locationOverride = null, maxFriendlyNpcsToAct, maxHostileNpcsToAct, currentTurnLog } = {}) {
             try {
-                const baseContext = await prepareBasePromptContext({ locationOverride });
+                const baseContext = await buildBasePromptContext({ locationOverride });
                 const renderedTemplate = promptEnv.render('base-context.xml.njk', {
                     ...baseContext,
                     maxFriendlyNpcsToAct,
@@ -3940,7 +3941,7 @@ module.exports = function registerApiRoutes(scope) {
                     break;
                 }
 
-                const baseContext = await prepareBasePromptContext({ locationOverride });
+                const baseContext = await buildBasePromptContext({ locationOverride });
                 const dispositionTypes = Array.isArray(baseContext?.dispositionTypes)
                     ? baseContext.dispositionTypes
                     : [];
@@ -4179,7 +4180,7 @@ module.exports = function registerApiRoutes(scope) {
             }
 
             try {
-                const baseContext = await prepareBasePromptContext({ locationOverride });
+                const baseContext = await buildBasePromptContext({ locationOverride });
                 const renderedTemplate = promptEnv.render('base-context.xml.njk', {
                     ...baseContext,
                     promptType: 'npc-plausibility-check',
@@ -4278,7 +4279,7 @@ module.exports = function registerApiRoutes(scope) {
 
             let baseContext;
             try {
-                baseContext = await prepareBasePromptContext({ locationOverride });
+                baseContext = await buildBasePromptContext({ locationOverride });
             } catch (error) {
                 console.warn('Failed to build base context for NPC memories:', error.message);
                 baseContext = {};
@@ -5028,7 +5029,7 @@ module.exports = function registerApiRoutes(scope) {
 
             try {
                 console.log('checking for additional lore')
-                const baseContext = await prepareBasePromptContext({ locationOverride });
+                const baseContext = await buildBasePromptContext({ locationOverride });
 
                 const promptVariables = {
                     ...baseContext,
@@ -6146,7 +6147,7 @@ module.exports = function registerApiRoutes(scope) {
                 if (!isForcedEventAction && currentPlayer && userMessage && userMessage.role === 'user') {
                     try {
                         stream.status('player_action:prompt', 'Building prompt for AI response.');
-                        const baseContext = await prepareBasePromptContext({ locationOverride: location });
+                        const baseContext = await buildSlimmedPlayerActionContext({ locationOverride: location });
                         const templateName = 'base-context.xml.njk';
 
                         let additionalLore = '';
